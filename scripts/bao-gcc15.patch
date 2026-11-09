@@ -1,0 +1,45 @@
+diff --git a/linuxelf/amd64.go b/linuxelf/amd64.go
+index deaf3c9..10cf996 100644
+--- a/linuxelf/amd64.go
++++ b/linuxelf/amd64.go
+@@ -153,7 +153,7 @@ func (p *Plan) bindAMD64(images []*image, index map[string]string) error {
+ 					case t == elf.R_X86_64_64 && r.add == 0:
+ 						binary.LittleEndian.PutUint64(s.data[r.off:], 0)
+ 						continue
+-					case amd64GOT(t) && r.add == -4:
++					case amd64GOT(t) && (r.add == -4 || r.add == -5 && r.off >= 3 && r.off+5 <= uint64(len(s.data)) && s.data[r.off-3] == 0x48 && s.data[r.off-2] == 0x83 && s.data[r.off-1] == 0x3d && s.data[r.off+4] == 0):
+ 						if zeroCell == 0 {
+ 							sec := m.addSection(section{name: ".bao.weak_zero", typ: elf.SHT_PROGBITS, flags: elf.SHF_ALLOC | elf.SHF_WRITE, align: 8, size: 8, data: make([]byte, 8)})
+ 							zeroCell = m.addSymbol(fmt.Sprintf("%sweak_zero_%d", p.Namespace, oi), sec, 0, 8)
+diff --git a/linuxelf/amd64_test.go b/linuxelf/amd64_test.go
+index b2b6cb8..7354995 100644
+--- a/linuxelf/amd64_test.go
++++ b/linuxelf/amd64_test.go
+@@ -133,3 +133,27 @@ func TestAMD64LLVMUnwindSectionTypeIsNarrow(t *testing.T) {
+ 		})
+ 	}
+ }
++
++func TestAMD64WeakGOTCompareImmediateZero(t *testing.T) {
++	for _, valid := range []bool{true, false} {
++		code := []byte{0x48, 0x83, 0x3d, 0, 0, 0, 0, 0}
++		if !valid {
++			code[1] = 0x8b
++		}
++		m := &image{machine: elf.EM_X86_64, sections: []section{{}, {name: ".text", typ: elf.SHT_PROGBITS, flags: elf.SHF_ALLOC | elf.SHF_EXECINSTR, align: 16, size: 8, data: code, relocs: []reloc{{off: 3, sym: 1, typ: elf.R_AARCH64(elf.R_X86_64_GOTPCREL), add: -5}}}}, symbols: []symbol{{}, {name: "optional", info: byte(elf.STB_WEAK) << 4}}}
++		err := (&Plan{Namespace: "cmp_"}).bindAMD64([]*image{m}, nil)
++		if !valid {
++			if err == nil {
++				t.Fatal("invalid instruction accepted")
++			}
++			continue
++		}
++		if err != nil {
++			t.Fatal(err)
++		}
++		r := m.sections[1].relocs[0]
++		if elf.R_X86_64(r.typ) != elf.R_X86_64_PC32 || r.add != -5 {
++			t.Fatal("comparison must read null cell with trailing-immediate RIP bias")
++		}
++	}
++}

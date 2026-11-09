@@ -1,0 +1,22 @@
+# Downloaded tools, sources, databases and build products
+/.work/
+/native/
+/bin/
+/dist/
+__pycache__/
+*.py[cod]
+
+# Local agent/account settings and secrets
+/.agents/
+/.codex/
+/.aws/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor/OS files
+.DS_Store
+.idea/
+.vscode/

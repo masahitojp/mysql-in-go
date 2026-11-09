@@ -1,0 +1,26 @@
+diff --git a/extra/abseil/CMakeLists.txt b/extra/abseil/CMakeLists.txt
+index e05b5225..3b17d6dc 100644
+--- a/extra/abseil/CMakeLists.txt
++++ b/extra/abseil/CMakeLists.txt
+@@ -80,7 +80,7 @@ IF(MSVC AND NOT WIN32_CLANG)
+   SET(absl_BUILD_SHARED_LIBS ON)
+ ENDIF()
+ IF(LINUX)
+-  SET(absl_BUILD_SHARED_LIBS ON)
++  SET(absl_BUILD_SHARED_LIBS OFF)
+ ENDIF()
+ 
+ IF(MSVC AND (FPROFILE_GENERATE OR FPROFILE_USE))
+diff --git a/extra/abseil/abseil-cpp-20230802.1/absl/base/attributes.h b/extra/abseil/abseil-cpp-20230802.1/absl/base/attributes.h
+index a7f279a0..25ffec5d 100644
+--- a/extra/abseil/abseil-cpp-20230802.1/absl/base/attributes.h
++++ b/extra/abseil/abseil-cpp-20230802.1/absl/base/attributes.h
+@@ -564,7 +564,7 @@
+ // Tells the compiler to use "initial-exec" mode for a thread-local variable.
+ // See http://people.redhat.com/drepper/tls.pdf for the gory details.
+ #if ABSL_HAVE_ATTRIBUTE(tls_model) || (defined(__GNUC__) && !defined(__clang__))
+-#define ABSL_ATTRIBUTE_INITIAL_EXEC __attribute__((tls_model("initial-exec")))
++#define ABSL_ATTRIBUTE_INITIAL_EXEC __attribute__((tls_model("global-dynamic")))
+ #else
+ #define ABSL_ATTRIBUTE_INITIAL_EXEC
+ #endif

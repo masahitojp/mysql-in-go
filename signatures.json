@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "abi": "c",
+  "functions": [
+    {"name": "ServerMain", "symbol": "mysqlmem_server_main", "params": ["int32", "pointer"], "result": "int32"}
+  ]
+}
