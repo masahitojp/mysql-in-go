@@ -1,6 +1,58 @@
 # Testcontainers + Podman との起動・終了時間比較
 
-## 最新: 両方式のデータを tmpfs に揃えた比較
+## 最新: tmpfs の破棄モードと Testcontainers
+
+2026-11-10、同じホストで4条件を順番を回転して各5回測定。
+全て MySQL 8.4.13、データと SQL 一時ファイルは tmpfs、buffer pool 64 MiB。
+SELECT 1 の結果・バージョンを各回検証した。
+
+| 条件 | 起動・接続まで | 停止・片付け | 全体 |
+| --- | --- | --- | --- |
+| Bao 毎回新規初期化 → Discard | 1.707 秒 | 25.7 ms | 1.733 秒 |
+| Bao fixture コピー → Discard | 384.1 ms | 21.7 ms | 406.2 ms |
+| Testcontainers 毎回新規初期化 → 通常停止 | 4.805 秒 | 1.539 秒 | 6.346 秒 |
+| Testcontainers 毎回新規初期化 → Stop(timeout=0) | 5.277 秒 | 145.3 ms | 5.424 秒 |
+
+fixture の baseline 準備は **2.731 秒**、最後の baseline 削除は **12.0 ms** で別計測。
+fixture の全体はコピーも含む。baseline は空の InnoDB テーブルを一つ持つ。
+5テスト分では、fixture は準備・最後の削除を含め約4.774秒、
+Testcontainers の待ち時間ゼロ停止は約27.121秒だった。
+
+[各サンプル JSON](results/disposable-2026-11-10.json) / [測定コード](disposable.go)
+
+### 比較の意味と条件
+
+- fixture は正常停止したデータを再利用する。Testcontainers は公式 entrypoint で毎回初期化する。
+  fixture 対コンテナの差の全てをコンテナ自体のオーバーヘッドとは扱わない。
+  毎回初期化する Bao の値も併記した。
+- Bao Discard は SIGKILL → Wait → 私有データ削除。
+  コンテナは通常の Stop の待機をゼロ秒にし、終了コード137または即時正常終了の0を確認してから
+  Terminate でコンテナとボリュームを削除する。終了の待機と削除までを測定する。
+- コンテナも待機をゼロにすると片付けは短くなった。初期化・起動の時間は残る。
+  起動のばらつきがあるので、停止オプションが起動を遅くしたとは判断しない。
+- fixture は baseline の準備のみ正常停止し、各子の FastShutdown 設定は使わない。
+- rootless Podman 5.8.6 / Testcontainers Go v0.45.0。
+  イメージ・Goビルド・Ryukの最初のウォームアップは測定外。
+- Unixソケット対TCP、MySQLのビルド、公式entrypointが異なる。
+  OSキャッシュの消去や負荷隔離、コンテナ再利用とSQLリセットの測定はしていない。
+
+既存の Podman socket とイメージを用意して実行:
+
+```sh
+export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+make compare-disposable
+```
+
+サンプルを保存する場合:
+
+```sh
+DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock" \
+TESTCONTAINERS_PROVIDER=podman \
+./bin/compare-testcontainers -root . -runs 5 -disposable \
+  > .work/comparison-disposable.json 2> .work/comparison-disposable.log
+```
+
+## 通常終了・高速終了: 両方式のデータを tmpfs に揃えた比較
 
 2026-11-10、MySQL 8.4.13、Podman 5.8.6 rootless、Testcontainers for Go v0.45.0。
 各方式の通常終了（innodb_fast_shutdown=1）と高速終了（2）を、実行順を回転して各 5 回測定した。

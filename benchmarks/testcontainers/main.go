@@ -59,7 +59,7 @@ func query(ctx context.Context, db querier) (float64, string, error) {
 	}
 	return duration, version, nil
 }
-func native(ctx context.Context, root string, fast bool) (m measurement, err error) {
+func native(ctx context.Context, root string, fast bool, discard ...bool) (m measurement, err error) {
 	begin := time.Now()
 	db, err := mysql.StartContext(ctx, mysql.Options{Binary: filepath.Join(root, "bin/mysqlmem"), BaseDir: filepath.Join(root, ".work/mysql-build"), CharacterSetsDir: filepath.Join(root, ".work/mysql/share/charsets"), Tmpfs: true, FastShutdown: fast})
 	if err != nil {
@@ -83,14 +83,18 @@ func native(ctx context.Context, root string, fast bool) (m measurement, err err
 	}
 
 	stop := time.Now()
-	if err := db.Close(); err != nil {
+	closeDB := db.Close
+	if len(discard) > 0 && discard[0] {
+		closeDB = db.Discard
+	}
+	if err := closeDB(); err != nil {
 		return m, err
 	}
 	m.CloseMS = ms(time.Since(stop))
 	m.TotalMS = ms(time.Since(begin))
 	return m, nil
 }
-func containers(ctx context.Context, image string, fast bool, tmpfs bool) (m measurement, err error) {
+func containers(ctx context.Context, image string, fast bool, tmpfs bool, discard ...bool) (m measurement, err error) {
 	begin := time.Now()
 	command := []string{"--innodb-buffer-pool-size=64M", "--mysqlx=OFF"}
 	// Apply fast mode only after the entrypoint has completed initialization.
@@ -177,6 +181,10 @@ func containers(ctx context.Context, image string, fast bool, tmpfs bool) (m mea
 		return m, err
 	}
 	timeout := 30 * time.Second
+	force := len(discard) > 0 && discard[0]
+	if force {
+		timeout = 0
+	}
 	if err := c.Stop(ctx, &timeout); err != nil {
 		return m, err
 	}
@@ -184,7 +192,7 @@ func containers(ctx context.Context, image string, fast bool, tmpfs bool) (m mea
 	if err != nil {
 		return m, err
 	}
-	if state.ExitCode != 0 {
+	if (!force && state.ExitCode != 0) || (force && state.ExitCode != 0 && state.ExitCode != 137) {
 		return m, fmt.Errorf("MySQL container exited with %d", state.ExitCode)
 	}
 	if err := c.Terminate(ctx); err != nil {
@@ -200,6 +208,7 @@ func run() error {
 	image := flag.String("image", "docker.io/library/mysql:8.4.13", "pre-pulled MySQL image")
 	root := flag.String("root", "../..", "mysql-in-go source root")
 	containerTmpfs := flag.Bool("container-tmpfs", true, "put container datadir and SQL temp files on tmpfs to match the native API")
+	disposable := flag.Bool("disposable", false, "compare fresh/disposable native, prepared fixture and container stop timeout zero")
 	flag.Parse()
 	if *runs < 1 {
 		return fmt.Errorf("runs must be positive")
@@ -213,6 +222,12 @@ func run() error {
 	fmt.Fprintln(os.Stderr, "Unmeasured Testcontainers warm-up (includes Ryuk and any missing helper image)")
 	if _, err := containers(ctx, *image, false, *containerTmpfs); err != nil {
 		return fmt.Errorf("warm-up: %w", err)
+	}
+	if *disposable {
+		if !*containerTmpfs {
+			return fmt.Errorf("disposable comparison requires container-tmpfs")
+		}
+		return compareDisposable(ctx, abs, *image, *runs)
 	}
 	out := struct {
 		Image          string        `json:"image"`

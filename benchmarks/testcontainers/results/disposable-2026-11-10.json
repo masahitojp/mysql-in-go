@@ -1,0 +1,184 @@
+{
+  "image": "docker.io/library/mysql:8.4.13",
+  "note": "Rotated order, five samples by default, MySQL 8.4.13 and SELECT 1 asserted, both tmpfs, buffer pool 64 MiB. Native fresh initializes each time then SIGKILL/reap/delete. Fixture copies a clean baseline with one empty InnoDB table; preparation/fixture cleanup separate. Containers initialize each time via official entrypoint; stop zero uses Stop(timeout=0), accepts exit 137 or an immediate clean exit, then Terminate/removes volumes. Normal container stop waits up to 30 s. Build/image pull/Ryuk warm-up excluded. Unix socket vs TCP and server builds/entrypoints differ. No reused-container/reset benchmark.",
+  "fixture_preparation_ms": 2730.906801,
+  "fixture_close_ms": 12.027035,
+  "native_fresh_discard": [
+    {
+      "start_ms": 1678.250822,
+      "query_ms": 0.220564,
+      "close_ms": 27.872944,
+      "total_ms": 1706.826045,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1706.313512,
+      "query_ms": 0.163878,
+      "close_ms": 27.48257,
+      "total_ms": 1734.067582,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1705.541361,
+      "query_ms": 0.223089,
+      "close_ms": 22.630425,
+      "total_ms": 1728.582958,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1758.568921,
+      "query_ms": 0.312107,
+      "close_ms": 27.022396,
+      "total_ms": 1786.073783,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1687.06988,
+      "query_ms": 0.232557,
+      "close_ms": 23.673986,
+      "total_ms": 1711.10289,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    }
+  ],
+  "fixture_discard": [
+    {
+      "start_ms": 371.175177,
+      "query_ms": 0.200326,
+      "close_ms": 28.307099,
+      "total_ms": 399.791818,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 405.841564,
+      "query_ms": 0.188314,
+      "close_ms": 21.386278,
+      "total_ms": 427.532213,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 343.430755,
+      "query_ms": 0.153568,
+      "close_ms": 20.613005,
+      "total_ms": 364.317404,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 400.772029,
+      "query_ms": 0.17556,
+      "close_ms": 19.226901,
+      "total_ms": 420.305425,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 399.423526,
+      "query_ms": 0.158397,
+      "close_ms": 19.213335,
+      "total_ms": 418.912299,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    }
+  ],
+  "testcontainers_normal": [
+    {
+      "start_ms": 4408.144841,
+      "query_ms": 0.14405,
+      "close_ms": 1539.742053,
+      "total_ms": 5949.106164,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5415.113359,
+      "query_ms": 0.125055,
+      "close_ms": 1534.441314,
+      "total_ms": 6951.606248,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5364.775032,
+      "query_ms": 0.075131,
+      "close_ms": 1544.266733,
+      "total_ms": 6911.00844,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 4408.475152,
+      "query_ms": 0.10098,
+      "close_ms": 1553.418797,
+      "total_ms": 5963.989585,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 4428.595571,
+      "query_ms": 0.137268,
+      "close_ms": 1523.282241,
+      "total_ms": 5953.618872,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    }
+  ],
+  "testcontainers_stop_zero": [
+    {
+      "start_ms": 4483.364853,
+      "query_ms": 0.108634,
+      "close_ms": 141.249508,
+      "total_ms": 4626.682827,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5519.036896,
+      "query_ms": 0.120987,
+      "close_ms": 135.399037,
+      "total_ms": 5656.37717,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5429.160619,
+      "query_ms": 0.124924,
+      "close_ms": 148.030126,
+      "total_ms": 5579.381321,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5424.766485,
+      "query_ms": 0.14353,
+      "close_ms": 141.111018,
+      "total_ms": 5568.05297,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5527.26849,
+      "query_ms": 0.1008,
+      "close_ms": 160.784337,
+      "total_ms": 5690.589773,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    }
+  ]
+}

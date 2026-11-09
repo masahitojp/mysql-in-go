@@ -8,7 +8,7 @@ export BISON_PKGDATADIR := $(CURDIR)/.work/sysroot/usr/share/bison
 export PATH := $(CURDIR)/.work/sysroot/usr/bin:$(PATH)
 JOBS ?= 10
 
-.PHONY: bootstrap configure mysql package build fmt vet test test-sql check-source source-archive test-api example test-select-one timing compare-testcontainers test-fixture test-fixture-tmpfs test-lifecycle test-fixture-discard
+.PHONY: bootstrap configure mysql package build fmt vet test test-sql check-source source-archive test-api example test-select-one timing compare-testcontainers test-fixture test-fixture-tmpfs test-lifecycle test-fixture-discard compare-disposable
 bootstrap:
 	./scripts/bootstrap.sh
 configure:
@@ -66,3 +66,7 @@ test-lifecycle: build
 
 test-fixture-discard:
 	MYSQLMEM_DISCARD_CHILDREN=1 MYSQLMEM_TMPFS=1 MYSQLMEM_INTEGRATION=1 $(GO) test -buildvcs=false -count=1 -v ./mysqltest ./examples/fixture ./mysql -run 'TestDiscard|TestFixtureIntegration|TestPreparedDatabase'
+
+compare-disposable:
+	$(GO) -C benchmarks/testcontainers build -buildvcs=false -o ../../bin/compare-testcontainers .
+	TESTCONTAINERS_PROVIDER=podman ./bin/compare-testcontainers -root . -runs 5 -disposable

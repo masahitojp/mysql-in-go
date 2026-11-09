@@ -230,3 +230,9 @@ make test-fixture-discard
 ```
 
 [使い方と測定条件](docs/fixture.md#tmpfs-の子を丸ごと破棄する)
+
+Testcontainers + Podman と各5回比較した最新の平均は、fixture 破棄モードが **0.406秒/テスト**
+（初回準備は別に2.731秒）、Testcontainers の待ち時間ゼロ停止が **5.424秒/テスト**でした。
+毎回初期化する Bao + Discard は **1.733秒**です。
+fixture は準備済みデータをコピーし、コンテナは毎回初期化する違いがあります。
+[比較条件・全サンプル・再実行方法](benchmarks/testcontainers/README.md)
