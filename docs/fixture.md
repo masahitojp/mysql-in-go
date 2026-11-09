@@ -130,3 +130,40 @@ Live.Reset / 固定接続先の proxy、メモリー Snapshot、永続 Snapshot 
 基準 DB の起動時はこのオプションを無効化し、Prepare 後に 0 を設定して停止するため、
 高速停止したデータを baseline にすることはない。
 子の raw pool を先に閉じてしまっても、fixture の Cleanup は別の管理接続で子を停止できる。
+
+## tmpfs の子を丸ごと破棄する
+
+```go
+f, err := mysqltest.New(ctx, mysqltest.Options{
+    MySQL: mysql.Options{Tmpfs: true},
+    DiscardChildren: true,
+    Prepare: prepare,
+})
+```
+
+`DiscardChildren: true` では `child.Close()` / `DB(t)` の Cleanup が
+子を SIGKILL → Wait で回収 → 専用データを削除する。SQL SHUTDOWN や SQL によるリセットは行わない。
+次のテストは毎回、変更していない baseline の新しいコピーから起動する。
+このモードは検証済み tmpfs が必須で、指定がなければ New がエラーを返す。
+child の FastShutdown 指定は無効化され、innodb_fast_shutdown の値に終了を依存させない。
+baseline だけは従来どおり innodb_fast_shutdown=0 で正常停止する。
+Rows / transaction / worker はテスト側で片付け、終了後のコピーは再利用しない。
+
+```sh
+make test-fixture-discard
+```
+
+2026-11-10、同じホスト・小さな seed・各 5 子を逐次実行した平均:
+
+| 項目 | SQL SHUTDOWN（FastShutdown=true、2） | 強制終了・破棄 |
+| --- | --- | --- |
+| データコピー | 49.1 ms | 44.3 ms |
+| 起動・接続待ち | 384.3 ms | 403.3 ms |
+| 終了・削除 | 960.6 ms | 26.0 ms |
+| コピー → 起動 → SELECT 1 → 終了・削除 | 1394.2 ms | 474.1 ms |
+
+初回の baseline 準備はそれぞれ 2.652 秒 / 2.727 秒で別計測。
+ビルド時間は含めず、OS キャッシュの消去や負荷の隔離はしていない。
+測定ログは `.work/disposable-integration.log`。環境によって時間は変わる。
+コミット済み変更・未コミット transaction の隔離、baseline の保持、並列実行、
+子の SIGKILL・回収・データ削除、Close / Discard の反復を確認した。

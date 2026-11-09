@@ -184,3 +184,13 @@ make test-lifecycle
 
 軽量テストでは、関係ない別の exec が親パイプの書き込み端を引き継がないことも確認する。
 親死亡の実測テストは Linux で実行している。Pdeathsig 依存の対策は追加していない。
+
+## tmpfs サーバーの Discard
+
+`Tmpfs: true` で起動した DB は `db.Discard()` で SQL SHUTDOWN を省略できる。
+SIGKILL してプロセスの回収を待ってから、所有する一時データを削除する。
+`Close()` と同じ一度きりの終了を共有し、先に呼んだ方の処理・結果を以後も返す。
+Tmpfs を指定しなかった DB ではエラーとなる。
+呼び出し側が指定した DataDir は削除しないため、その所有者が削除する必要がある。
+強制終了したデータは baseline として再利用しない。
+fixture では [DiscardChildren](fixture.md#tmpfs-の子を丸ごと破棄する) が専用コピーの削除まで担当する。

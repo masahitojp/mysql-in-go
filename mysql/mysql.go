@@ -54,6 +54,7 @@ type DB struct {
 	adminConfig     *driver.Config
 	dsn             string
 	retainWork      bool
+	tmpfs           bool
 	once            sync.Once
 	closeErr        error
 }
@@ -197,7 +198,7 @@ func StartContext(ctx context.Context, options ...Options) (*DB, error) {
 	if err != nil {
 		return fail(err)
 	}
-	d := &DB{cmd: cmd, parentPipe: lease, done: make(chan struct{}), workDir: work, log: logFile, shutdownTimeout: o.ShutdownTimeout}
+	d := &DB{tmpfs: o.Tmpfs, cmd: cmd, parentPipe: lease, done: make(chan struct{}), workDir: work, log: logFile, shutdownTimeout: o.ShutdownTimeout}
 	ownedLog = false
 	go func() { d.waitErr = cmd.Wait(); close(d.done) }()
 	config := driver.NewConfig()

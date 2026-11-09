@@ -20,8 +20,9 @@ func TestPreparedDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	f, err := mysqltest.New(t.Context(), mysqltest.Options{
-		MySQL:       mysql.Options{Binary: filepath.Join(root, "bin/mysqlmem"), BaseDir: filepath.Join(root, ".work/mysql-build"), CharacterSetsDir: filepath.Join(root, ".work/mysql/share/charsets"), Tmpfs: os.Getenv("MYSQLMEM_TMPFS") == "1"},
-		MaxChildren: 2,
+		MySQL:           mysql.Options{Binary: filepath.Join(root, "bin/mysqlmem"), BaseDir: filepath.Join(root, ".work/mysql-build"), CharacterSetsDir: filepath.Join(root, ".work/mysql/share/charsets"), Tmpfs: os.Getenv("MYSQLMEM_TMPFS") == "1"},
+		MaxChildren:     2,
+		DiscardChildren: os.Getenv("MYSQLMEM_DISCARD_CHILDREN") == "1",
 		Prepare: func(ctx context.Context, db *sql.DB) error {
 			if _, err := db.ExecContext(ctx, "CREATE TABLE items(id INT PRIMARY KEY, label VARCHAR(32)) ENGINE=InnoDB"); err != nil {
 				return err

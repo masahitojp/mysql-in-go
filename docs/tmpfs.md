@@ -63,3 +63,15 @@ tmpfs はメモリーと、設定によっては swap を利用する。ディ�
 基準データ＋並列コピー＋MySQL 自体のメモリーの合計を見て、容量と MaxChildren を設定する。
 このライブラリは swap 設定やマウント容量を変更しない。
 [Linux kernel の tmpfs 説明](https://docs.kernel.org/filesystems/tmpfs.html)
+
+## 正常終了を待たず破棄する
+
+`mysqltest.Options{MySQL: mysql.Options{Tmpfs: true}, DiscardChildren: true}`
+を指定すると、各テストの子は正常終了の代わりに強制終了・回収して削除する。
+innodb_fast_shutdown=2 の設定は不要。baseline は正常停止して保持する。
+今回の小さな seed では終了・削除が平均 960.6 ms から 26.0 ms になった。
+[使い方・測定条件](fixture.md#tmpfs-の子を丸ごと破棄する)を参照。
+
+```sh
+make test-fixture-discard
+```

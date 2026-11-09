@@ -215,3 +215,18 @@ MySQL のビルドと SQL テストは、上記の対象環境で実行する統
 このプロジェクトの自作コードは [MIT License](LICENSE) です。
 同梱する MySQL / Bao 向けの差分は元のライセンスに従います。
 第三者のソースや生成バイナリーの扱いは [THIRD_PARTY.md](THIRD_PARTY.md) を参照してください。
+
+## tmpfs のテスト子プロセスを破棄する
+
+`mysqltest.Options` に `MySQL: mysql.Options{Tmpfs: true}` と
+`DiscardChildren: true` を指定すると、各テストの Cleanup で子を強制終了・回収し、
+専用コピーを削除します。baseline は一度だけ正常停止し、次のテストへコピーします。
+このモードでは FastShutdown の設定は不要です。
+小さな seed を各 5 回測定した平均で、終了・削除は 961 ms → 26 ms、
+コピーから終了まで全体は 1.39 秒 → 0.47 秒でした。初回準備は別に約 2.7 秒です。
+
+```sh
+make test-fixture-discard
+```
+
+[使い方と測定条件](docs/fixture.md#tmpfs-の子を丸ごと破棄する)

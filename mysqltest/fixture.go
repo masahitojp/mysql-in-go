@@ -22,26 +22,28 @@ import (
 var ErrClosed = errors.New("mysqltest: fixture closed")
 
 type Options struct {
-	MySQL       mysql.Options
-	Prepare     func(context.Context, *sql.DB) error
-	MaxChildren int // Zero defaults to two. Includes copying, starting and closing.
+	MySQL           mysql.Options
+	Prepare         func(context.Context, *sql.DB) error
+	MaxChildren     int  // Zero defaults to two. Includes copying, starting and closing.
+	DiscardChildren bool // Require MySQL.Tmpfs; kill/reap/remove test children instead of SQL SHUTDOWN.
 }
 
 type Fixture struct {
-	mu          sync.Mutex
-	opts        mysql.Options
-	dir         string
-	cancel      context.CancelFunc
-	life        context.Context
-	slots       chan struct{}
-	ops         sync.WaitGroup
-	children    map[*Child]struct{}
-	owners      map[string]*owned
-	closed      bool
-	failure     error
-	once        sync.Once
-	closeErr    error
-	preparation time.Duration
+	mu              sync.Mutex
+	opts            mysql.Options
+	dir             string
+	cancel          context.CancelFunc
+	life            context.Context
+	slots           chan struct{}
+	ops             sync.WaitGroup
+	children        map[*Child]struct{}
+	owners          map[string]*owned
+	closed          bool
+	failure         error
+	once            sync.Once
+	closeErr        error
+	preparation     time.Duration
+	discardChildren bool
 }
 type owned struct {
 	ready chan struct{}
@@ -68,6 +70,9 @@ func New(ctx context.Context, o Options) (*Fixture, error) {
 	begin := time.Now()
 	if o.MaxChildren < 0 {
 		return nil, errors.New("mysqltest: MaxChildren must not be negative")
+	}
+	if o.DiscardChildren && !o.MySQL.Tmpfs {
+		return nil, errors.New("mysqltest: DiscardChildren requires MySQL.Tmpfs")
 	}
 	if o.MySQL.DataDir != "" {
 		return nil, errors.New("mysqltest: DataDir is owned by the fixture; do not specify it")
@@ -165,7 +170,7 @@ func New(ctx context.Context, o Options) (*Fixture, error) {
 		return nil, fmt.Errorf("mysqltest: baseline shutdown; retained %s: %w", dir, err)
 	}
 	life, cancel := context.WithCancel(context.Background())
-	return &Fixture{opts: o.MySQL, dir: dir, cancel: cancel, life: life, slots: make(chan struct{}, o.MaxChildren), children: make(map[*Child]struct{}), owners: make(map[string]*owned), preparation: time.Since(begin)}, nil
+	return &Fixture{discardChildren: o.DiscardChildren, opts: o.MySQL, dir: dir, cancel: cancel, life: life, slots: make(chan struct{}, o.MaxChildren), children: make(map[*Child]struct{}), owners: make(map[string]*owned), preparation: time.Since(begin)}, nil
 }
 
 func (f *Fixture) PreparationTime() time.Duration { return f.preparation }
@@ -211,6 +216,9 @@ func (f *Fixture) Open(ctx context.Context) (*Child, error) {
 	}
 	copyTime := time.Since(begin)
 	opts := f.opts
+	if f.discardChildren {
+		opts.FastShutdown = false
+	}
 	opts.DataDir = filepath.Join(dir, "data")
 	begin = time.Now()
 	server, err := mysql.StartContext(startup, opts)
@@ -283,7 +291,11 @@ func (f *Fixture) DB(t testing.TB) *sql.DB {
 
 func (c *Child) Close() error {
 	c.once.Do(func() {
-		c.err = c.server.Close()
+		if c.fixture.discardChildren {
+			c.err = c.server.Discard()
+		} else {
+			c.err = c.server.Close()
+		}
 		if c.err == nil {
 			c.err = os.RemoveAll(c.dir)
 		}

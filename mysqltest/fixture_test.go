@@ -50,7 +50,7 @@ func TestCopyRejectsSymlinksAndCancellation(t *testing.T) {
 	}
 }
 func TestInvalidFixtureOptions(t *testing.T) {
-	for _, o := range []Options{{MaxChildren: -1}, {MySQL: mysql.Options{DataDir: t.TempDir()}}} {
+	for _, o := range []Options{{MaxChildren: -1}, {DiscardChildren: true}, {MySQL: mysql.Options{DataDir: t.TempDir()}}} {
 		if f, err := New(t.Context(), o); err == nil || f != nil {
 			t.Fatalf("got %v %v", f, err)
 		}
@@ -95,7 +95,7 @@ func fixtureOptions(t *testing.T) mysql.Options {
 }
 func TestFixtureIntegration(t *testing.T) {
 	var prepares atomic.Int32
-	f, err := New(t.Context(), Options{MySQL: fixtureOptions(t), MaxChildren: 2, Prepare: func(ctx context.Context, db *sql.DB) error {
+	f, err := New(t.Context(), Options{MySQL: fixtureOptions(t), MaxChildren: 2, DiscardChildren: os.Getenv("MYSQLMEM_DISCARD_CHILDREN") == "1", Prepare: func(ctx context.Context, db *sql.DB) error {
 		prepares.Add(1)
 		if _, err := db.ExecContext(ctx, "CREATE TABLE items(id INT PRIMARY KEY, label VARCHAR(32)) ENGINE=InnoDB"); err != nil {
 			return err
