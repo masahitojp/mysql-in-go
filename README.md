@@ -40,13 +40,16 @@ Start → SELECT 1 → Close の全体は平均 **2.75 秒**でした。
 [測定条件と再実行方法](docs/startup-timing.md)を参照してください。
 
 同じホストで Testcontainers＋Podman と比較したところ、新規 DB の接続可能までの平均は
-こちらが **1.72 秒**、Testcontainers 側が **6.07 秒**でした。
+両方のデータを tmpfs に揃えた最新の通常終了条件では、こちらが **1.72 秒**、
+Testcontainers 側が **5.15 秒**でした。
 [比較の条件・生データ・再実行手順](benchmarks/testcontainers/README.md)も公開しています。
 
 `mysql` パッケージの `Start()` / `Query()` / `Close()` から利用できます。
 内部では **MySQL を内蔵した専用の Go 実行ファイルを子プロセスとして起動**します。
 `Close()` で子を終了しても、呼び出し元の Go プログラムは動き続けます。
 同一プロセス内で MySQL を起動・停止する API ではありません。
+付属サーバーは親パイプの EOF を監視し、親が異常終了した場合は強制終了します。
+その場合、正常停止や残ったデータの削除までは保証しません。
 全機能、長時間運用、クラッシュリカバリーは未検証です。
 
 ## Go から起動・終了する
@@ -88,6 +91,11 @@ if err := db.Close(); err != nil {
 子: bin/mysqlmem（Bao で MySQL を組み込んだ実行ファイル）
 ```
 
+SQL プールは非公開です。必要な場合だけ `db.Unwrap()` で `*sql.DB` を取得できます。
+新規 DB の指定は `mysql.Options{Database: "test", CreateDatabase: true}`、
+終了方式の選択は `FastShutdown: true`（次回起動時の crash recovery が必要）を使います。
+fixture の baseline は引き続き 0 で停止します。
+
 デフォルトのデータは一時的で、正常な `Close()` 時に削除します。
 保存したい場合は `mysql.Start(mysql.Options{DataDir: "./my-data"})` と指定します。
 [API の設定・寿命・制約](docs/api.md)に詳しい説明があります。
@@ -97,6 +105,7 @@ if err := db.Close(); err != nil {
 `mysqltest.New(..., Options{Prepare: ...})` で初期データを一度準備し、
 `fixture.DB(t)` でテスト専用の `*sql.DB` を受け取れるようになりました。
 テストの変更は別テストに漏れず、子プロセスは Cleanup で終了します。
+`auto.cnf` は複製せず、各 child は新しい `server_uuid` を生成します。
 
 ```sh
 make test-fixture

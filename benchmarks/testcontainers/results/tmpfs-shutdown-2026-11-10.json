@@ -1,0 +1,187 @@
+{
+  "image": "docker.io/library/mysql:8.4.13",
+  "note": "Four variants in rotated order, fresh DB every run. Native datadir and SQL tmpdir are verified tmpfs. Container storage is selected by container_tmpfs; tmpfs sizes are 512 MiB data / 64 MiB temp. Regular shutdown uses default innodb_fast_shutdown=1, fast mode uses 2 only after data initialization (container SET GLOBAL after entrypoint readiness). SQL/connection readiness polled every 50 ms; SELECT 1 and MySQL 8.4.13 asserted. Images/Go build and one Ryuk warm-up excluded. Buffer pools 64 MiB. Native uses Unix socket; official image uses TCP and different entrypoint/build. End-to-end setup comparison, not isolated Bao performance.",
+  "bao": [
+    {
+      "start_ms": 1629.229773,
+      "query_ms": 0.149801,
+      "close_ms": 1062.851441,
+      "total_ms": 2692.336474,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1743.14817,
+      "query_ms": 0.197842,
+      "close_ms": 1008.006636,
+      "total_ms": 2751.472553,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1739.595124,
+      "query_ms": 0.17593,
+      "close_ms": 1026.407331,
+      "total_ms": 2766.337294,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1770.137965,
+      "query_ms": 0.225594,
+      "close_ms": 975.39084,
+      "total_ms": 2745.84557,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 1708.28438,
+      "query_ms": 0.279966,
+      "close_ms": 1038.618948,
+      "total_ms": 2747.363402,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 1
+    }
+  ],
+  "testcontainers_podman": [
+    {
+      "start_ms": 4581.979844,
+      "query_ms": 0.129483,
+      "close_ms": 1564.015174,
+      "total_ms": 6147.37488,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5489.603677,
+      "query_ms": 0.141917,
+      "close_ms": 1604.71538,
+      "total_ms": 7096.283659,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5537.947346,
+      "query_ms": 0.156755,
+      "close_ms": 1640.418518,
+      "total_ms": 7180.343851,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 4631.643683,
+      "query_ms": 0.076634,
+      "close_ms": 1544.12022,
+      "total_ms": 6177.205502,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    },
+    {
+      "start_ms": 5508.130089,
+      "query_ms": 0.140204,
+      "close_ms": 1543.973665,
+      "total_ms": 7054.295933,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 1
+    }
+  ],
+  "bao_fast_shutdown": [
+    {
+      "start_ms": 1735.572456,
+      "query_ms": 0.31451,
+      "close_ms": 971.525055,
+      "total_ms": 2707.577743,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 1742.941491,
+      "query_ms": 0.173937,
+      "close_ms": 1003.802437,
+      "total_ms": 2747.018293,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 1689.248662,
+      "query_ms": 0.163337,
+      "close_ms": 1042.153799,
+      "total_ms": 2731.684491,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 1711.714616,
+      "query_ms": 0.243047,
+      "close_ms": 990.251323,
+      "total_ms": 2702.452704,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 1760.983814,
+      "query_ms": 0.262613,
+      "close_ms": 987.374799,
+      "total_ms": 2748.80448,
+      "mysql_version": "8.4.13",
+      "innodb_fast_shutdown": 2
+    }
+  ],
+  "testcontainers_podman_fast_shutdown": [
+    {
+      "start_ms": 5442.711997,
+      "query_ms": 0.085702,
+      "close_ms": 1467.251151,
+      "total_ms": 6911.897031,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 5559.713135,
+      "query_ms": 0.077445,
+      "close_ms": 1453.251285,
+      "total_ms": 7015.819184,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 4500.884423,
+      "query_ms": 0.086353,
+      "close_ms": 1459.73657,
+      "total_ms": 5962.432989,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 5579.341798,
+      "query_ms": 0.126869,
+      "close_ms": 1408.256298,
+      "total_ms": 6989.847282,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 2
+    },
+    {
+      "start_ms": 5459.28666,
+      "query_ms": 0.08507,
+      "close_ms": 1466.887257,
+      "total_ms": 6928.413696,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec",
+      "innodb_fast_shutdown": 2
+    }
+  ],
+  "container_tmpfs": true,
+  "measured_date": "2026-11-10",
+  "podman_version": "5.8.6",
+  "testcontainers_go_version": "v0.45.0",
+  "image_digest": "sha256:72c368d898861f3b3a07af0e6d690400f44f048799ed46822783d9224cc2c86d"
+}

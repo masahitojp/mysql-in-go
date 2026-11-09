@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -266,5 +267,123 @@ func TestCloseActiveChildrenIntegration(t *testing.T) {
 	}
 	if _, err := os.Stat(f.dir); !os.IsNotExist(err) {
 		t.Fatalf("fixture directory remains: %v", err)
+	}
+}
+
+func TestCopyExcludesOnlyRootAutoCNF(t *testing.T) {
+	src := t.TempDir()
+	dst := filepath.Join(t.TempDir(), "child")
+	if err := os.Mkdir(filepath.Join(src, "schema"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"auto.cnf", filepath.Join("schema", "auto.cnf")} {
+		if err := os.WriteFile(filepath.Join(src, name), []byte("original"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := copyTree(t.Context(), src, dst); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dst, "auto.cnf")); !os.IsNotExist(err) {
+		t.Fatalf("root auto.cnf was copied: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(src, "auto.cnf")); err != nil {
+		t.Fatalf("baseline identity changed: %v", err)
+	}
+	if data, err := os.ReadFile(filepath.Join(dst, "schema", "auto.cnf")); err != nil || string(data) != "original" {
+		t.Fatalf("unrelated file changed: %q %v", data, err)
+	}
+}
+
+func TestChildUUIDsAreUniqueIntegration(t *testing.T) {
+	f, err := New(t.Context(), Options{MySQL: fixtureOptions(t), MaxChildren: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := f.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	original, err := os.ReadFile(filepath.Join(f.dir, "baseline", "auto.cnf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	children := make([]*Child, 0, 2)
+	ids := make([]string, 0, 2)
+	for i := 0; i < 2; i++ {
+		child, err := f.Open(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		children = append(children, child)
+		var uuid string
+		var binlog int
+		if err := child.QueryRowContext(t.Context(), "SELECT @@server_uuid, @@log_bin").Scan(&uuid, &binlog); err != nil {
+			t.Fatal(err)
+		}
+		if uuid == "" || strings.Contains(string(original), uuid) {
+			t.Fatalf("child reused baseline UUID: %q", uuid)
+		}
+		ids = append(ids, uuid)
+		t.Logf("child %d: uuid=%s log_bin=%d", i+1, uuid, binlog)
+	}
+	if ids[0] == ids[1] {
+		t.Fatalf("children share UUID %q", ids[0])
+	}
+	if err := children[0].Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := children[1].Close(); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(filepath.Join(f.dir, "baseline", "auto.cnf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(original) {
+		t.Fatal("baseline auto.cnf was mutated")
+	}
+}
+
+func TestFastChildrenKeepColdBaselineIntegration(t *testing.T) {
+	o := fixtureOptions(t)
+	o.FastShutdown = true
+	f, err := New(t.Context(), Options{MySQL: o, MaxChildren: 1, Prepare: func(ctx context.Context, db *sql.DB) error {
+		if _, err := db.ExecContext(ctx, "CREATE TABLE items(id INT PRIMARY KEY)"); err != nil {
+			return err
+		}
+		_, err := db.ExecContext(ctx, "INSERT INTO items VALUES(1)")
+		return err
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := f.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	for i := 0; i < 2; i++ {
+		c, err := f.Open(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		var mode, count int
+		if err := c.QueryRow("SELECT @@innodb_fast_shutdown").Scan(&mode); err != nil || mode != 2 {
+			t.Fatalf("mode %d %v", mode, err)
+		}
+		if err := c.QueryRow("SELECT COUNT(*) FROM items").Scan(&count); err != nil || count != 1 {
+			t.Fatalf("count %d %v", count, err)
+		}
+		if _, err := c.Exec("DELETE FROM items"); err != nil {
+			t.Fatal(err)
+		}
+		if err := c.Unwrap().Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := c.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

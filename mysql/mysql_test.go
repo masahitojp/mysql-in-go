@@ -155,6 +155,10 @@ func TestIntegrationPersistentDataSurvivesRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { first.Close() })
+	var firstUUID string
+	if err := first.QueryRow("SELECT @@server_uuid").Scan(&firstUUID); err != nil {
+		t.Fatal(err)
+	}
 	for _, q := range []string{"CREATE DATABASE demo", "CREATE TABLE demo.items(id INT PRIMARY KEY) ENGINE=InnoDB", "INSERT INTO demo.items VALUES(42)"} {
 		if _, err := first.Exec(q); err != nil {
 			t.Fatal(err)
@@ -168,6 +172,13 @@ func TestIntegrationPersistentDataSurvivesRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { second.Close() })
+	var secondUUID string
+	if err := second.QueryRow("SELECT @@server_uuid").Scan(&secondUUID); err != nil {
+		t.Fatal(err)
+	}
+	if firstUUID != secondUUID {
+		t.Fatalf("persistent instance UUID changed: %s -> %s", firstUUID, secondUUID)
+	}
 	var id int
 	if err := second.QueryRow("SELECT id FROM demo.items").Scan(&id); err != nil || id != 42 {
 		t.Fatalf("persisted row: %d %v", id, err)
@@ -196,7 +207,7 @@ func TestCloseTimeoutKillsAndReapsChild(t *testing.T) {
 		logFile.Close()
 		t.Fatal(err)
 	}
-	db := &DB{DB: pool, cmd: cmd, done: make(chan struct{}), log: logFile, workDir: work, shutdownTimeout: 50 * time.Millisecond}
+	db := &DB{pool: pool, cmd: cmd, done: make(chan struct{}), log: logFile, workDir: work, shutdownTimeout: 50 * time.Millisecond}
 	go func() { db.waitErr = cmd.Wait(); close(db.done) }()
 	err = db.Close()
 	if !errors.Is(err, context.DeadlineExceeded) {

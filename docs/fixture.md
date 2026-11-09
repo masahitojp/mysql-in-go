@@ -78,6 +78,10 @@ Go test の作業ディレクトリは通常パッケージのディレクトリ
 
 - 同じ fixture で同じ `t.Name()` の `DB(t)` は同じ子を返す。
 - 別テストは別の MySQL・データ。コミット済みの変更も相互に漏れない。
+- datadir 直下の `auto.cnf` はコピーせず、child の初回起動で `server_uuid` を再生成する。
+  基準データの auto.cnf は保持し、通常の永続 DB 再起動では UUID を変えない。
+  binlog / GTID の既存履歴はコピー対象のままで、server_id の割り当てやレプリケーション設定は行わない。
+  レプリケーション互換性を保証する機能ではない。
 - コピーは通常のファイルコピー。ハードリンクや稼働中の DB のコピーは使わない。
   ファイルサイズに応じた I/O とディスク容量が必要。
 - MaxChildren（ゼロ時 2）はコピー・起動・稼働・終了中の子の合計上限。
@@ -85,6 +89,7 @@ Go test の作業ディレクトリは通常パッケージのディレクトリ
 - テスト側は Rows を閉じ、トランザクションを終了しておく。
   `DB(t)` で受け取った pool の寿命は fixture に任せる。
 - 明示的な寿命が必要なら `child, err := f.Open(ctx)` を使い、`child.Close()` で枠を返す。
+  Child は SQL プールを埋め込まず、SQL 操作を転送する。raw pool が必要なら `child.Unwrap()` を明示的に使う。
   親テストの cleanup まで子を保持したまま上限以上を要求すると待ち続けるので、
   子を明示的に閉じるかサブテスト単位で `DB(t)` を使う。
 - New の Context は準備中のみを管理する。成功後は fixture.Close が所有権を持つ。
@@ -118,3 +123,10 @@ Prepare エラー、fixture 終了後の受付拒否、SELECT 1 の assertion。
 mariamem と同じ条件での速度比較はまだ行っていない。
 今回の方式は毎回コピーと実 MySQL 起動を行うため、メモリー状態からの Fork と同じ速度は前提にしない。
 Live.Reset / 固定接続先の proxy、メモリー Snapshot、永続 Snapshot の API は未実装。
+
+## 高速終了の選択
+
+`Options.MySQL.FastShutdown` を true にすると各 child は innodb_fast_shutdown=2 で起動する。
+基準 DB の起動時はこのオプションを無効化し、Prepare 後に 0 を設定して停止するため、
+高速停止したデータを baseline にすることはない。
+子の raw pool を先に閉じてしまっても、fixture の Cleanup は別の管理接続で子を停止できる。

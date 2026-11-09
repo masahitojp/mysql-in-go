@@ -50,9 +50,8 @@ type owned struct {
 }
 
 // Child owns a copied datadir and server. Close clients/Rows/transactions before
-// Close. Its SQL pool is also available directly through the embedded sql.DB.
+// Close. Use Unwrap only when an integration explicitly needs a raw SQL pool.
 type Child struct {
-	*sql.DB
 	server    *mysql.DB
 	fixture   *Fixture
 	dir       string
@@ -110,6 +109,8 @@ func New(ctx context.Context, o Options) (*Fixture, error) {
 	}
 	baseline := o.MySQL
 	baseline.Database = ""
+	baseline.CreateDatabase = false
+	baseline.FastShutdown = false
 	baseline.DataDir = filepath.Join(dir, "baseline")
 	server, err := mysql.StartContext(ctx, baseline)
 	if err != nil {
@@ -217,7 +218,7 @@ func (f *Fixture) Open(ctx context.Context) (*Child, error) {
 		os.RemoveAll(dir)
 		return nil, err
 	}
-	c := &Child{DB: server.DB, server: server, fixture: f, dir: dir, CopyTime: copyTime, StartTime: time.Since(begin)}
+	c := &Child{server: server, fixture: f, dir: dir, CopyTime: copyTime, StartTime: time.Since(begin)}
 	// Track it before releasing the in-flight operation so Close cannot miss it.
 	f.mu.Lock()
 	f.children[c] = struct{}{}
@@ -277,7 +278,7 @@ func (f *Fixture) DB(t testing.TB) *sql.DB {
 		t.Fatalf("mysqltest startup: %v", entry.err)
 		return nil
 	}
-	return entry.child.DB
+	return entry.child.Unwrap()
 }
 
 func (c *Child) Close() error {

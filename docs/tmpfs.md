@@ -28,7 +28,7 @@ f, err := mysqltest.New(ctx, mysqltest.Options{
 fixture は Close / テストの Cleanup で子プロセスを回収し、私有コピーを削除する。
 fixture.Close は基準データも削除する。
 失敗時に調査用ファイルを残す規約は通常モードと同じ。
-親の異常終了時に必ず削除される保証はない。
+親の異常終了時は [親パイプ監視](api.md#close)で付属サーバーを停止させるが、データが必ず削除される保証はない。
 
 ## 実行テスト
 

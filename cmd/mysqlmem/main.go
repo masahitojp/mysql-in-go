@@ -2,14 +2,20 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"unsafe"
 
+	"mysqlmem/internal/parentwatch"
 	"mysqlmem/native"
 )
 
 func main() {
+	if err := parentwatch.WatchFromEnv(); err != nil {
+		fmt.Fprintln(os.Stderr, "mysqlmem: parent watch:", err)
+		os.Exit(2)
+	}
 	runtime.LockOSThread()
 	// MySQL retains argv for the lifetime of mysqld_main. Pin both the strings
 	// and argv until that call returns; include the conventional null sentinel.

@@ -25,16 +25,22 @@ import (
 )
 
 type measurement struct {
-	StartMS float64 `json:"start_ms"`
-	QueryMS float64 `json:"query_ms"`
-	CloseMS float64 `json:"close_ms"`
-	TotalMS float64 `json:"total_ms"`
-	Version string  `json:"mysql_version"`
-	ImageID string  `json:"image_id,omitempty"`
+	StartMS      float64 `json:"start_ms"`
+	QueryMS      float64 `json:"query_ms"`
+	CloseMS      float64 `json:"close_ms"`
+	TotalMS      float64 `json:"total_ms"`
+	Version      string  `json:"mysql_version"`
+	ImageID      string  `json:"image_id,omitempty"`
+	ShutdownMode int     `json:"innodb_fast_shutdown"`
 }
 
 func ms(d time.Duration) float64 { return float64(d) / float64(time.Millisecond) }
-func query(ctx context.Context, db *sql.DB) (float64, string, error) {
+
+type querier interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func query(ctx context.Context, db querier) (float64, string, error) {
 	begin := time.Now()
 	var one int
 	if err := db.QueryRowContext(ctx, "SELECT 1").Scan(&one); err != nil {
@@ -53,18 +59,29 @@ func query(ctx context.Context, db *sql.DB) (float64, string, error) {
 	}
 	return duration, version, nil
 }
-func native(ctx context.Context, root string) (m measurement, err error) {
+func native(ctx context.Context, root string, fast bool) (m measurement, err error) {
 	begin := time.Now()
-	db, err := mysql.StartContext(ctx, mysql.Options{Binary: filepath.Join(root, "bin/mysqlmem"), BaseDir: filepath.Join(root, ".work/mysql-build"), CharacterSetsDir: filepath.Join(root, ".work/mysql/share/charsets")})
+	db, err := mysql.StartContext(ctx, mysql.Options{Binary: filepath.Join(root, "bin/mysqlmem"), BaseDir: filepath.Join(root, ".work/mysql-build"), CharacterSetsDir: filepath.Join(root, ".work/mysql/share/charsets"), Tmpfs: true, FastShutdown: fast})
 	if err != nil {
 		return m, err
 	}
 	defer db.Close()
 	m.StartMS = ms(time.Since(begin))
-	m.QueryMS, m.Version, err = query(ctx, db.DB)
+	m.QueryMS, m.Version, err = query(ctx, db)
 	if err != nil {
 		return m, err
 	}
+	if err := db.QueryRowContext(ctx, "SELECT @@innodb_fast_shutdown").Scan(&m.ShutdownMode); err != nil {
+		return m, err
+	}
+	want := 1
+	if fast {
+		want = 2
+	}
+	if m.ShutdownMode != want {
+		return m, fmt.Errorf("shutdown mode %d, want %d", m.ShutdownMode, want)
+	}
+
 	stop := time.Now()
 	if err := db.Close(); err != nil {
 		return m, err
@@ -73,11 +90,18 @@ func native(ctx context.Context, root string) (m measurement, err error) {
 	m.TotalMS = ms(time.Since(begin))
 	return m, nil
 }
-func containers(ctx context.Context, image string) (m measurement, err error) {
+func containers(ctx context.Context, image string, fast bool, tmpfs bool) (m measurement, err error) {
 	begin := time.Now()
+	command := []string{"--innodb-buffer-pool-size=64M", "--mysqlx=OFF"}
+	// Apply fast mode only after the entrypoint has completed initialization.
+	// Passing 2 to --initialize can leave newly-created data unusable.
+	storage := tc.WithTmpfs(nil)
+	if tmpfs {
+		storage = tc.WithTmpfs(map[string]string{"/var/lib/mysql": "rw,size=512m", "/tmp": "rw,size=64m,mode=1777"})
+	}
 	c, err := tcmysql.Run(ctx, image, tcmysql.WithUsername("root"), tcmysql.WithPassword(""), tcmysql.WithDatabase(""),
 		tc.WithEnv(map[string]string{"MYSQL_ROOT_HOST": "%"}),
-		tc.WithCmdArgs("--innodb-buffer-pool-size=64M", "--mysqlx=OFF"),
+		tc.WithCmdArgs(command...), storage,
 		tc.WithHostConfigModifier(func(h *container.HostConfig) {
 			if h.PortBindings == nil {
 				h.PortBindings = network.PortMap{}
@@ -122,11 +146,27 @@ func containers(ctx context.Context, image string) (m measurement, err error) {
 	if err := db.PingContext(ctx); err != nil {
 		return m, err
 	}
+	if fast {
+		if _, err := db.ExecContext(ctx, "SET GLOBAL innodb_fast_shutdown=2"); err != nil {
+			return m, err
+		}
+	}
 	m.StartMS = ms(time.Since(begin))
 	m.QueryMS, m.Version, err = query(ctx, db)
 	if err != nil {
 		return m, err
 	}
+	if err := db.QueryRowContext(ctx, "SELECT @@innodb_fast_shutdown").Scan(&m.ShutdownMode); err != nil {
+		return m, err
+	}
+	want := 1
+	if fast {
+		want = 2
+	}
+	if m.ShutdownMode != want {
+		return m, fmt.Errorf("shutdown mode %d, want %d", m.ShutdownMode, want)
+	}
+
 	info, err := c.Inspect(ctx)
 	if err != nil {
 		return m, err
@@ -159,6 +199,7 @@ func run() error {
 	runs := flag.Int("runs", 5, "measured samples per implementation")
 	image := flag.String("image", "docker.io/library/mysql:8.4.13", "pre-pulled MySQL image")
 	root := flag.String("root", "../..", "mysql-in-go source root")
+	containerTmpfs := flag.Bool("container-tmpfs", true, "put container datadir and SQL temp files on tmpfs to match the native API")
 	flag.Parse()
 	if *runs < 1 {
 		return fmt.Errorf("runs must be positive")
@@ -170,27 +211,31 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
 	fmt.Fprintln(os.Stderr, "Unmeasured Testcontainers warm-up (includes Ryuk and any missing helper image)")
-	if _, err := containers(ctx, *image); err != nil {
+	if _, err := containers(ctx, *image, false, *containerTmpfs); err != nil {
 		return fmt.Errorf("warm-up: %w", err)
 	}
 	out := struct {
-		Image      string        `json:"image"`
-		Note       string        `json:"note"`
-		Native     []measurement `json:"bao"`
-		Containers []measurement `json:"testcontainers_podman"`
-	}{Image: *image, Note: "Alternating order; fresh DB every run; images and Go build excluded; rootless Podman; Ryuk stays enabled and is warmed once. Bao uses Unix socket/temp files; official MySQL image uses TCP/a fresh Podman-managed volume (image storage driver: overlay). Both buffer pools 64 MiB, mysqlx disabled; this is end-to-end setup comparison, not an isolated Bao benchmark."}
+		Image          string        `json:"image"`
+		Note           string        `json:"note"`
+		Native         []measurement `json:"bao"`
+		Containers     []measurement `json:"testcontainers_podman"`
+		NativeFast     []measurement `json:"bao_fast_shutdown"`
+		ContainersFast []measurement `json:"testcontainers_podman_fast_shutdown"`
+		ContainerTmpfs bool          `json:"container_tmpfs"`
+	}{Image: *image, ContainerTmpfs: *containerTmpfs, Note: "Four variants in rotated order, fresh DB every run. Native datadir and SQL tmpdir are verified tmpfs. Container storage is selected by container_tmpfs; tmpfs sizes are 512 MiB data / 64 MiB temp. Regular shutdown uses default innodb_fast_shutdown=1, fast mode uses 2 only after data initialization (container SET GLOBAL after entrypoint readiness). SQL/connection readiness polled every 50 ms; SELECT 1 and MySQL 8.4.13 asserted. Images/Go build and one Ryuk warm-up excluded. Buffer pools 64 MiB. Native uses Unix socket; official image uses TCP and different entrypoint/build. End-to-end setup comparison, not isolated Bao performance."}
 	for i := 0; i < *runs; i++ {
 		functions := []struct {
 			name   string
 			run    func() (measurement, error)
 			target *[]measurement
 		}{
-			{"Bao", func() (measurement, error) { return native(ctx, abs) }, &out.Native},
-			{"Testcontainers", func() (measurement, error) { return containers(ctx, *image) }, &out.Containers},
+			{"Bao", func() (measurement, error) { return native(ctx, abs, false) }, &out.Native},
+			{"Bao-fast", func() (measurement, error) { return native(ctx, abs, true) }, &out.NativeFast},
+			{"Testcontainers", func() (measurement, error) { return containers(ctx, *image, false, *containerTmpfs) }, &out.Containers},
+			{"Testcontainers-fast", func() (measurement, error) { return containers(ctx, *image, true, *containerTmpfs) }, &out.ContainersFast},
 		}
-		if i%2 == 1 {
-			functions[0], functions[1] = functions[1], functions[0]
-		}
+		offset := i % len(functions)
+		functions = append(functions[offset:], functions[:offset]...)
 		for _, f := range functions {
 			m, err := f.run()
 			if err != nil {

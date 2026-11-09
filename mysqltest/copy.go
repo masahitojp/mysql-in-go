@@ -22,6 +22,11 @@ func copyTree(ctx context.Context, src, dst string) error {
 		if err != nil {
 			return err
 		}
+		// auto.cnf is an instance identity, not reusable baseline data.
+		// MySQL regenerates it with a new server_uuid on the child's first start.
+		if relative == "auto.cnf" {
+			return nil
+		}
 		dest := filepath.Join(dst, relative)
 		if entry.IsDir() {
 			return os.MkdirAll(dest, 0700)
