@@ -2,13 +2,13 @@
 
 ## プロジェクト構成とモジュール配置
 
-MySQL 8.4 LTS を Bao で Go に組み込む Linux/amd64 向けの検証用リポジトリです。`cmd/mysqlmem` が組み込みサーバーのエントリーポイント、`cmd/selectone` が Go の MySQL ドライバーによる接続確認、`cmd/sqlcheck` が SQL の機能・永続化検証、`scripts/` がビルド手順と必要なソース差分です。`.work/` は取得ソース・依存物・ビルド出力、`native/` は Bao の生成物で、いずれも Git 管理対象外です。
+MySQL 8.4 LTS を Bao で Go に組み込む Linux/amd64 向けの検証用リポジトリです。`mysql/` が子プロセス管理 API、`mysqltest/` が停止済み基準データからテスト DB を作る fixture、`cmd/example` が API 利用例、`cmd/mysqlmem` が組み込みサーバーのエントリーポイント、`cmd/selectone` が Go の MySQL ドライバーによる接続確認、`cmd/sqlcheck` が SQL の機能・永続化検証、`scripts/` がビルド手順と必要なソース差分です。`.work/` は取得ソース・依存物・ビルド出力、`native/` は Bao の生成物で、いずれも Git 管理対象外です。
 
 最初の実装では、採用言語の標準的な構成に従い、責務ごとにコードを整理してください。テストは対象モジュールの近く、または用途が明確なテストディレクトリに配置します。構成とエントリーポイントが決まったら、このガイドを更新してください。`.agents/`、`.codex/`、`.aws/` は環境設定用のディレクトリとして扱います。
 
 ## ビルド・テスト・開発コマンド
 
-Makefile にツール準備、MySQL 構成・ビルド、Bao 変換、Go ビルドのコマンドがあります。`make check-source` はネイティブ生成物不要の軽量チェック、`make test` と `make test-sql` は生成物を使う統合テスト、`make source-archive` は公開用ソースのアーカイブ作成です。検証結果と実行手順は README.md を参照してください。未確認の工程を成功済みと記載しないでください。
+Makefile にツール準備、MySQL 構成・ビルド、Bao 変換、Go ビルドのコマンドがあります。`make check-source` はネイティブ生成物不要の軽量チェック、`make test` と `make test-sql`、`make test-api`、`make test-select-one`、`make test-fixture`、`make test-fixture-tmpfs` は生成物を使う統合テスト、`make source-archive` は公開用ソースのアーカイブ作成です。検証結果と実行手順は README.md を参照してください。未確認の工程を成功済みと記載しないでください。
 
 必要に応じて、依存関係のインストール、ローカル実行、テスト、フォーマットの手順を用意します。設定を追加して動作を確認するまでは、利用可能なコマンドとして案内しないでください。
 

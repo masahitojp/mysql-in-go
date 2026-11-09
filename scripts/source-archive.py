@@ -11,7 +11,8 @@ files = [root / name for name in [
     'Makefile', 'go.mod', 'go.sum', 'signatures.json',
 ]]
 for directory, suffixes in {
-    'cmd': {'.go'}, 'scripts': {'.sh', '.py', '.cc', '.ld', '.patch'},
+    'cmd': {'.go'}, 'mysql': {'.go'}, 'mysqltest': {'.go'}, 'internal': {'.go'}, 'examples': {'.go'},
+    'benchmarks': {'.go', '.mod', '.sum', '.md', '.json'}, 'scripts': {'.sh', '.py', '.cc', '.ld', '.patch'},
     'docs': {'.md'}, 'LICENSES': {'.txt'}, '.github/workflows': {'.yml'},
 }.items():
     files.extend(path for path in (root / directory).rglob('*')

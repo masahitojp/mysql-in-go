@@ -1,0 +1,88 @@
+{
+  "image": "docker.io/library/mysql:8.4.13",
+  "note": "Alternating order; fresh DB every run; images and Go build excluded; rootless Podman; Ryuk stays enabled and is warmed once. Bao uses Unix socket/temp files; official MySQL image uses TCP/a fresh Podman-managed volume (image storage driver: overlay). Both buffer pools 64 MiB, mysqlx disabled; this is end-to-end setup comparison, not an isolated Bao benchmark.",
+  "bao": [
+    {
+      "start_ms": 1748.806276,
+      "query_ms": 0.342494,
+      "close_ms": 994.351725,
+      "total_ms": 2743.589792,
+      "mysql_version": "8.4.13"
+    },
+    {
+      "start_ms": 1746.571866,
+      "query_ms": 0.168537,
+      "close_ms": 993.433389,
+      "total_ms": 2740.221862,
+      "mysql_version": "8.4.13"
+    },
+    {
+      "start_ms": 1737.667399,
+      "query_ms": 0.268715,
+      "close_ms": 998.24362,
+      "total_ms": 2736.270134,
+      "mysql_version": "8.4.13"
+    },
+    {
+      "start_ms": 1649.544552,
+      "query_ms": 0.263115,
+      "close_ms": 1048.27011,
+      "total_ms": 2698.183346,
+      "mysql_version": "8.4.13"
+    },
+    {
+      "start_ms": 1737.869158,
+      "query_ms": 0.160171,
+      "close_ms": 987.994105,
+      "total_ms": 2726.065513,
+      "mysql_version": "8.4.13"
+    }
+  ],
+  "testcontainers_podman": [
+    {
+      "start_ms": 6148.740231,
+      "query_ms": 0.154961,
+      "close_ms": 1501.436567,
+      "total_ms": 7652.550199,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec"
+    },
+    {
+      "start_ms": 6063.517245,
+      "query_ms": 0.180269,
+      "close_ms": 1536.401147,
+      "total_ms": 7602.39103,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec"
+    },
+    {
+      "start_ms": 6869.62309,
+      "query_ms": 0.126919,
+      "close_ms": 1537.831014,
+      "total_ms": 8408.83477,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec"
+    },
+    {
+      "start_ms": 6136.565568,
+      "query_ms": 0.098525,
+      "close_ms": 1535.618937,
+      "total_ms": 7673.437189,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec"
+    },
+    {
+      "start_ms": 5140.087486,
+      "query_ms": 0.113534,
+      "close_ms": 1550.684655,
+      "total_ms": 6692.521218,
+      "mysql_version": "8.4.13",
+      "image_id": "sha256:0f1a0ccadda3a1734d1db557e203ec58621d56fa248525016e85fe4f631311ec"
+    }
+  ],
+  "podman_version": "5.8.6",
+  "testcontainers_go_version": "v0.45.0",
+  "image_digest": "sha256:72c368d898861f3b3a07af0e6d690400f44f048799ed46822783d9224cc2c86d",
+  "measured_date": "2026-11-10",
+  "storage_clarification": "Confirmed later: the host /tmp used by Bao is tmpfs; the Podman-managed volume uses a different backing filesystem. Storage was not matched."
+}

@@ -1,4 +1,4 @@
-# mysqlmem
+# mysql-in-go
 
 **MySQL 8.4 LTS を Go の実行ファイルに組み込んで動かす実験です。**
 [Bao](https://github.com/moriyoshi/bao) を使って MySQL のコンパイル済みコードをリンクし、
@@ -35,9 +35,88 @@ MySQL 8.4.13: SELECT 1 = 1
 制約エラー、正常終了後の永続化まで、期待値と比較して確認済みです。
 [確認項目と結果](docs/verification.md)を参照してください。
 
-現在は **MySQL を内蔵した専用の Go 実行ファイル**です。
-MySQL がシグナルとプロセス終了も管理するため、任意の Go アプリから自由に起動・停止する API は提供していません。
+今回の測定では、新規 DB の `Start()` は平均 **1.72 秒**、初期化済みの空 DB なら **0.36 秒**。
+Start → SELECT 1 → Close の全体は平均 **2.75 秒**でした。
+[測定条件と再実行方法](docs/startup-timing.md)を参照してください。
+
+同じホストで Testcontainers＋Podman と比較したところ、新規 DB の接続可能までの平均は
+こちらが **1.72 秒**、Testcontainers 側が **6.07 秒**でした。
+[比較の条件・生データ・再実行手順](benchmarks/testcontainers/README.md)も公開しています。
+
+`mysql` パッケージの `Start()` / `Query()` / `Close()` から利用できます。
+内部では **MySQL を内蔵した専用の Go 実行ファイルを子プロセスとして起動**します。
+`Close()` で子を終了しても、呼び出し元の Go プログラムは動き続けます。
+同一プロセス内で MySQL を起動・停止する API ではありません。
 全機能、長時間運用、クラッシュリカバリーは未検証です。
+
+## Go から起動・終了する
+
+ビルド済みのリポジトリのルートで実行できます。
+
+```sh
+make example
+```
+
+```text
+SELECT 1 = 1
+MySQL を終了しました。Go の処理は続いています。
+```
+
+[実行できるサンプル](cmd/example/main.go)では次の API を使います。
+
+```go
+db, err := mysql.Start()
+if err != nil {
+    return err
+}
+defer db.Close()
+
+rows, err := db.Query("SELECT 1")
+// err の確認、行の読み取り、rows.Close() を行う
+
+if err := db.Close(); err != nil {
+    return err
+}
+// ここからも親の Go プログラムは動き続ける
+```
+
+```text
+親の Go: Start() → Query() → Close() → Go の処理を続行
+           │         │         │
+           │ 起動    │ SQL     │ SHUTDOWN と終了待ち
+           ▼         ▼         ▼
+子: bin/mysqlmem（Bao で MySQL を組み込んだ実行ファイル）
+```
+
+デフォルトのデータは一時的で、正常な `Close()` 時に削除します。
+保存したい場合は `mysql.Start(mysql.Options{DataDir: "./my-data"})` と指定します。
+[API の設定・寿命・制約](docs/api.md)に詳しい説明があります。
+
+## Prepare once / テストごとの DB
+
+`mysqltest.New(..., Options{Prepare: ...})` で初期データを一度準備し、
+`fixture.DB(t)` でテスト専用の `*sql.DB` を受け取れるようになりました。
+テストの変更は別テストに漏れず、子プロセスは Cleanup で終了します。
+
+```sh
+make test-fixture
+```
+
+mariamem のメモリー Snapshot とは異なり、停止済みデータのコピーから起動する試作です。
+小さな seed での初回測定では、子のコピー＋起動は約 0.41 秒、終了まで約 1.41 秒でした。
+[使い方・所有権・測定条件](docs/fixture.md) / [実行可能なテスト](examples/fixture/fixture_test.go)
+
+## tmpfs 上で使い捨てる
+
+Linux では `mysql.Options{Tmpfs: true}` を指定すると、検証済みの `/dev/shm` tmpfs に
+データを置けます。fixture の基準データとコピーにも使えます。
+
+```sh
+make test-fixture-tmpfs
+```
+
+[使い方と実測結果](docs/tmpfs.md)を参照してください。今回のホストは元々 `/tmp` も tmpfs だったため、
+明示的な tmpfs モードでの大幅な速度改善はありませんでした。
 
 ## 対象環境
 
@@ -73,6 +152,12 @@ make test
 
 # SQL の機能確認 → 正常終了 → 再起動 → 永続化確認
 make test-sql
+
+# Go API の起動・終了・永続化・異常系
+make test-api
+
+# 通常の Go テストで SELECT 1 の結果を assert
+make test-select-one
 ```
 
 テストは所有者だけがアクセスできる一時ディレクトリ `.work/probe-*` / `.work/sql-*` を作り、
@@ -92,6 +177,10 @@ MYSQL_DSN='root@unix(/path/to/mysql.sock)/' bin/selectone
 
 | 場所 | 役割 |
 | --- | --- |
+| `mysqltest/` | Prepare once と独立したテスト DB の fixture |
+| `examples/fixture/` | fixture の利用テスト |
+| `mysql/` | 子プロセスを管理する Start / Close API とテスト |
+| `cmd/example/` | Go API を利用するサンプル |
 | `cmd/mysqlmem/` | Bao 経由で MySQL サーバー本体を呼ぶ入口 |
 | `cmd/selectone/` | Go からの接続確認 |
 | `cmd/sqlcheck/` | SQL の結果とエラーを検証 |

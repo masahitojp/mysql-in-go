@@ -8,7 +8,7 @@ export BISON_PKGDATADIR := $(CURDIR)/.work/sysroot/usr/share/bison
 export PATH := $(CURDIR)/.work/sysroot/usr/bin:$(PATH)
 JOBS ?= 10
 
-.PHONY: bootstrap configure mysql package build fmt vet test test-sql check-source source-archive
+.PHONY: bootstrap configure mysql package build fmt vet test test-sql check-source source-archive test-api example test-select-one timing compare-testcontainers test-fixture test-fixture-tmpfs
 bootstrap:
 	./scripts/bootstrap.sh
 configure:
@@ -21,10 +21,11 @@ build:
 	$(GO) build -buildvcs=false -o bin/mysqlmem ./cmd/mysqlmem
 	$(GO) build -buildvcs=false -o bin/selectone ./cmd/selectone
 	$(GO) build -buildvcs=false -o bin/sqlcheck ./cmd/sqlcheck
+	$(GO) build -buildvcs=false -o bin/example ./cmd/example
 fmt:
-	$(GO) fmt ./cmd/...
+	$(GO) fmt ./cmd/... ./mysql ./mysqltest ./examples/... ./internal/...
 vet:
-	$(GO) vet -buildvcs=false ./cmd/...
+	$(GO) vet -buildvcs=false ./cmd/... ./mysql ./mysqltest ./examples/... ./internal/...
 
 test:
 	python3 scripts/probe.py
@@ -36,3 +37,25 @@ check-source:
 	./scripts/check-source.sh "$(GO)"
 source-archive:
 	python3 scripts/source-archive.py
+
+test-api:
+	MYSQLMEM_INTEGRATION=1 $(GO) test -buildvcs=false -count=1 -v ./mysql
+example:
+	$(GO) run -buildvcs=false ./cmd/example
+
+test-select-one:
+	MYSQLMEM_INTEGRATION=1 $(GO) test -buildvcs=false -count=1 -v ./mysql -run '^TestSelectOne$$'
+
+timing:
+	$(GO) build -buildvcs=false -o bin/startuptime ./cmd/startuptime
+	./bin/startuptime -runs 5
+
+compare-testcontainers:
+	$(GO) -C benchmarks/testcontainers build -buildvcs=false -o ../../bin/compare-testcontainers .
+	TESTCONTAINERS_PROVIDER=podman ./bin/compare-testcontainers -root . -runs 5
+
+test-fixture:
+	MYSQLMEM_INTEGRATION=1 $(GO) test -buildvcs=false -count=1 -v ./mysqltest ./examples/fixture
+
+test-fixture-tmpfs:
+	MYSQLMEM_TMPFS=1 MYSQLMEM_INTEGRATION=1 $(GO) test -buildvcs=false -count=1 -v ./mysqltest ./examples/fixture ./mysql -run 'TestFixture|TestPrepareFailure|TestCloseActive|TestPreparedDatabase|TestTmpfs'

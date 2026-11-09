@@ -20,3 +20,12 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# Disposable runtime data and diagnostics
+/my-data/
+/mysql-data/
+*.sock
+*.pid
+*.log
+/core
+/core.[0-9]*
