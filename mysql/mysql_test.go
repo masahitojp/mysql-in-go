@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"mysqlmem/internal/tempstore"
+	"github.com/masahitojp/mysql-in-go/internal/tempstore"
 	"os"
 	"os/exec"
 	"path/filepath"

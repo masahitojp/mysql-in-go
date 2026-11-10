@@ -8,15 +8,16 @@ import tarfile
 root = Path(__file__).resolve().parent.parent
 files = [root / name for name in [
     '.gitignore', 'AGENTS.md', 'LICENSE', 'THIRD_PARTY.md', 'README.md',
-    'Makefile', 'go.mod', 'go.sum', 'signatures.json',
+    'Makefile', 'go.mod', 'go.sum', 'mysql_in_go.go', 'signatures.json',
 ]]
 for directory, suffixes in {
-    'cmd': {'.go'}, 'mysql': {'.go'}, 'mysqltest': {'.go'}, 'internal': {'.go'}, 'examples': {'.go'},
+    'server': {'.go', '.mod'}, 'build': {'.Dockerfile'}, 'cmd': {'.go'}, 'mysql': {'.go'}, 'mysqltest': {'.go'}, 'internal': {'.go', '.json'}, 'examples': {'.go'},
     'benchmarks': {'.go', '.mod', '.sum', '.md', '.json'}, 'scripts': {'.sh', '.py', '.cc', '.ld', '.patch'},
     'docs': {'.md'}, 'LICENSES': {'.txt'}, '.github/workflows': {'.yml'},
 }.items():
     files.extend(path for path in (root / directory).rglob('*')
-                 if path.is_file() and path.suffix in suffixes and '__pycache__' not in path.parts)
+                 if path.is_file() and path.suffix in suffixes and '__pycache__' not in path.parts
+                 and not (len(path.relative_to(root).parts) > 1 and path.relative_to(root).parts[:2] == ('server', 'native')))
 output = root / 'dist/mysqlmem-source.tar.gz'
 output.parent.mkdir(exist_ok=True)
 with output.open('wb') as raw, gzip.GzipFile(filename='', fileobj=raw, mode='wb', mtime=0) as compressed:

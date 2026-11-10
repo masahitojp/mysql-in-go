@@ -2,7 +2,7 @@
 
 ## プロジェクト構成とモジュール配置
 
-MySQL 8.4 LTS を Bao で Go に組み込む Linux/amd64 向けの検証用リポジトリです。`mysql/` が子プロセス管理 API、`mysqltest/` が停止済み基準データからテスト DB を作る fixture、`cmd/example` が API 利用例、`cmd/mysqlmem` が組み込みサーバーのエントリーポイント、`cmd/selectone` が Go の MySQL ドライバーによる接続確認、`cmd/sqlcheck` が SQL の機能・永続化検証、`scripts/` がビルド手順と必要なソース差分です。`.work/` は取得ソース・依存物・ビルド出力、`native/` は Bao の生成物で、いずれも Git 管理対象外です。
+MySQL 8.4 LTS を Bao で Go に組み込む Linux/amd64 向けの検証用リポジトリです。`mysql/` が子プロセス管理 API、`mysqltest/` が停止済み基準データからテスト DB を作る fixture、`cmd/example` が API 利用例、`server` が組み込みサーバーのエントリーポイント、`cmd/selectone` が Go の MySQL ドライバーによる接続確認、`cmd/sqlcheck` が SQL の機能・永続化検証、`scripts/` がビルド手順と必要なソース差分です。`.work/` は取得ソース・依存物・ビルド出力、`server/native/` は Bao の生成物で、いずれも Git 管理対象外です。
 
 最初の実装では、採用言語の標準的な構成に従い、責務ごとにコードを整理してください。テストは対象モジュールの近く、または用途が明確なテストディレクトリに配置します。構成とエントリーポイントが決まったら、このガイドを更新してください。`.agents/`、`.codex/`、`.aws/` は環境設定用のディレクトリとして扱います。
 

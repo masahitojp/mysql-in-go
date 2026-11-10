@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"mysqlmem/mysql"
-	"mysqlmem/mysqltest"
+	"github.com/masahitojp/mysql-in-go/mysql"
+	"github.com/masahitojp/mysql-in-go/mysqltest"
 )
 
 func TestPreparedDatabase(t *testing.T) {

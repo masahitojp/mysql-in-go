@@ -21,7 +21,7 @@ import (
 	_ "github.com/testcontainers/testcontainers-go/modules/podman"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"mysqlmem/mysql"
+	"github.com/masahitojp/mysql-in-go/mysql"
 )
 
 type measurement struct {

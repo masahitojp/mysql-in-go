@@ -1,6 +1,6 @@
 # Prepare once / 独立したテスト DB
 
-`mysqlmem/mysqltest` は mariamem の fixture に近い Go テストの書き方を提供する試作。
+`github.com/masahitojp/mysql-in-go/mysqltest` は mariamem の fixture に近い Go テストの書き方を提供する試作。
 `Prepare` は一度だけ実行し、テストごとに停止済みデータの私有コピーと MySQL 子プロセスを作る。
 メモリー Snapshot/Fork の実装・互換レイヤーではない。
 

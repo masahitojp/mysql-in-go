@@ -9,7 +9,7 @@
 - 関数ごとの入力セクションを 64 バイト境界に配置し、Go の findfunc テーブルの密度上限を回避する。
 - Bao が非対応の `.note.gnu.property` を除く。この実験では GNU property note を保持しない。
 - `scripts/bao-gcc15.patch` で、GCC 15 の `cmpq $0, weak@GOTPCREL(%rip)` を Bao が正しく扱えるようにする。対応する正常・異常系テストを追加し、`go test ./linuxelf -run TestAMD64` に成功。
-- 条件変数の 6 関数には Go の dynamic import で `GLIBC_2.3.2` を明示する。無指定では旧 ABI が選ばれ、InnoDB の初期化で失敗した。この生成後の変更は `native/mysqlmem-glibc-versions.json` に記録する。
+- 条件変数の 6 関数には Go の dynamic import で `GLIBC_2.3.2` を明示する。無指定では旧 ABI が選ばれ、InnoDB の初期化で失敗した。この生成後の変更は `server/native/mysqlmem-glibc-versions.json` に記録する。
 
 `make build`、`make vet`、`make test` で最終確認した。
 Bao 生成物に MySQL、GCC、glibc のライセンス通知を同梱する。

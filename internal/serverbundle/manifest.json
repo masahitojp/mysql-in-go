@@ -1,0 +1,10 @@
+{
+  "version": "v0.1.0",
+  "mysql": "8.4.13",
+  "assets": {
+    "linux-amd64": {
+      "url": "https://github.com/masahitojp/mysql-in-go/releases/download/v0.1.0/mysql-8.4.13-linux-amd64-ubuntu24.tar.gz",
+      "sha256": "743d6c037ac8f8a060a8a3d5932fb92d21a9f21c01981e6615060536787dd0e1"
+    }
+  }
+}

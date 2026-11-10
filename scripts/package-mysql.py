@@ -40,7 +40,7 @@ run(['ld', '-r', '--force-group-allocation', '-T', root / 'scripts/merge-section
 run(['objcopy', '--remove-section=.note.gnu.property', aligned, clean])
 stage = Path(tempfile.mkdtemp(prefix='package-', dir=work))
 out = stage / 'native'
-run([work / 'tools/bao', 'build', '-v', '-target', 'linux/amd64', '-sysroot', '/', '-bindings', root / 'signatures.json', '-linux-system-library', 'libssl.so.3', '-linux-system-library', 'libcrypto.so.3', '-link-notice', work / 'mysql/LICENSE', '-link-notice', '/usr/share/doc/gcc-15-base/copyright', '-link-notice', '/usr/share/doc/libc6/copyright', '-o', out, clean], cwd=root)
+run([work / 'tools/bao', 'build', '-v', '-target', 'linux/amd64', '-sysroot', '/', '-bindings', root / 'signatures.json', '-linux-system-library', 'libssl.so.3', '-linux-system-library', 'libcrypto.so.3', '-link-notice', work / 'mysql/LICENSE', '-link-notice', f'/usr/share/doc/gcc-{subprocess.check_output(["g++", "-dumpversion"], text=True).strip().split(".")[0]}-base/copyright', '-link-notice', '/usr/share/doc/libc6/copyright', '-o', out, clean], cwd=root)
 # Unversioned ELF imports bind the old glibc condition-variable ABI. Ask Go's
 # internal linker for the current default ABI explicitly (all six operations).
 versions = {f'pthread_cond_{name}': 'GLIBC_2.3.2' for name in ['init', 'destroy', 'wait', 'timedwait', 'signal', 'broadcast']}
@@ -53,7 +53,8 @@ for name, version in versions.items():
     text = text.replace(old, f' {name}#{version} "libc.so.6"')
 source.write_text(text)
 (out / 'mysqlmem-glibc-versions.json').write_text(json.dumps(versions, indent=2) + '\n')
-if (root / 'native').exists():
-    shutil.move(root / 'native', stage / 'previous-native')
-shutil.move(out, root / 'native')
-print(f'Published {root / "native"}; intermediate artifacts: {stage}')
+destination = root / 'server/native'
+if destination.exists():
+    shutil.move(destination, stage / 'previous-native')
+shutil.move(out, destination)
+print(f'Published {destination}; intermediate artifacts: {stage}')

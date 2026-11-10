@@ -15,8 +15,9 @@ import (
 	"time"
 
 	driver "github.com/go-sql-driver/mysql"
-	"mysqlmem/internal/tempstore"
-	"mysqlmem/mysql"
+	"github.com/masahitojp/mysql-in-go/internal/serverbundle"
+	"github.com/masahitojp/mysql-in-go/internal/tempstore"
+	"github.com/masahitojp/mysql-in-go/mysql"
 )
 
 var ErrClosed = errors.New("mysqltest: fixture closed")
@@ -83,24 +84,13 @@ func New(ctx context.Context, o Options) (*Fixture, error) {
 	if o.MaxChildren == 0 {
 		o.MaxChildren = 2
 	}
-	// Resolve build assets once; later tests may change their working directory.
-	for _, path := range []struct {
-		value    *string
-		fallback string
-	}{
-		{&o.MySQL.Binary, "bin/mysqlmem"},
-		{&o.MySQL.BaseDir, ".work/mysql-build"},
-		{&o.MySQL.CharacterSetsDir, ".work/mysql/share/charsets"},
-	} {
-		if *path.value == "" {
-			*path.value = path.fallback
-		}
-		absolute, err := filepath.Abs(*path.value)
-		if err != nil {
-			return nil, err
-		}
-		*path.value = absolute
+	// Resolve once: later tests may change their working directory.
+	bundle, err := serverbundle.Locate(ctx, o.MySQL.Binary, o.MySQL.BaseDir, o.MySQL.CharacterSetsDir)
+	if err != nil {
+		return nil, err
 	}
+	o.MySQL.Binary, o.MySQL.BaseDir, o.MySQL.CharacterSetsDir = bundle.Binary, bundle.BaseDir, bundle.CharacterSetsDir
+
 	if o.MySQL.Database == "" {
 		o.MySQL.Database = "test"
 	}

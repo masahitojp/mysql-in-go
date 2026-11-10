@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"mysqlmem/internal/parentwatch"
+	"github.com/masahitojp/mysql-in-go/internal/parentwatch"
 )
 
 type parentReport struct {

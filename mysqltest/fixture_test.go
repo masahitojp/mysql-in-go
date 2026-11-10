@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"mysqlmem/internal/tempstore"
-	"mysqlmem/mysql"
+	"github.com/masahitojp/mysql-in-go/internal/tempstore"
+	"github.com/masahitojp/mysql-in-go/mysql"
 )
 
 func TestCopyIsIndependent(t *testing.T) {

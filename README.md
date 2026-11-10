@@ -4,6 +4,33 @@
 [Bao](https://github.com/moriyoshi/bao) を使って MySQL のコンパイル済みコードをリンクし、
 `CGO_ENABLED=0` でビルドした Go プログラムからサーバー本体を呼び出します。
 
+## ライブラリとして使う
+
+Linux amd64、Ubuntu 24.04 / 26.04、Go 1.26.0 以上が対象です。
+OS の OpenSSL 3 を使うので、`libssl3t64` が必要です。
+
+```sh
+sudo apt-get install -y libssl3t64
+go get github.com/masahitojp/mysql-in-go@v0.1.0
+```
+
+```go
+import mysql "github.com/masahitojp/mysql-in-go"
+
+// エラーを確認してから使う。
+db, err := mysql.Start()
+if err != nil { panic(err) }
+defer db.Close()
+var one int
+if err := db.QueryRow("SELECT 1").Scan(&one); err != nil { panic(err) }
+```
+
+初回だけ固定版のサーバーを取得・SHA-256検証してキャッシュします。
+利用者側で MySQL をビルドする必要はありません。
+[配布・対応環境・オフライン利用](docs/distribution.md)
+
+## サーバーの仕組み
+
 ```text
 サーバー: bin/mysqlmem（1 プロセス）
 ┌──────────────────────────────────────────┐
@@ -179,7 +206,7 @@ make test-select-one
 MYSQL_DSN='root@unix(/path/to/mysql.sock)/' bin/selectone
 ```
 
-`bin/mysqlmem` の動作にはメッセージファイルなども必要です。実行ファイル単体をコピーする配布形態は整えていません。
+`bin/mysqlmem` の動作にはメッセージ・文字セット・ICU データも必要です。配布バンドルにはこれらを同梱します。
 [ビルドの仕組みと必要な調整](docs/build-notes.md)に詳細をまとめています。
 
 ## ソースの構成とチェック
@@ -190,17 +217,17 @@ MYSQL_DSN='root@unix(/path/to/mysql.sock)/' bin/selectone
 | `examples/fixture/` | fixture の利用テスト |
 | `mysql/` | 子プロセスを管理する Start / Close API とテスト |
 | `cmd/example/` | Go API を利用するサンプル |
-| `cmd/mysqlmem/` | Bao 経由で MySQL サーバー本体を呼ぶ入口 |
+| `server/` | Bao 経由で MySQL サーバー本体を呼ぶ入口 |
 | `cmd/selectone/` | Go からの接続確認 |
 | `cmd/sqlcheck/` | SQL の結果とエラーを検証 |
 | `scripts/` | 取得、ビルド、リンク、実行テスト、上流への差分 |
 | `signatures.json` | Bao に公開する C ABI の宣言 |
-| `.work/`、`native/`、`bin/` | 取得物と生成物。Git 管理対象外 |
+| `.work/`、`server/native/`、`bin/` | 取得物と生成物。Git 管理対象外 |
 
 ```sh
 make check-source  # MySQL/Bao 生成物なしでも実行可能
 make fmt
-make vet           # native/ 生成後のサーバー側も含む静的解析
+make vet           # 公開 Go API の静的解析
 make source-archive
 ```
 

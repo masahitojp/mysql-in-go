@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"mysqlmem/mysql"
+	"github.com/masahitojp/mysql-in-go/mysql"
 )
 
 func main() {

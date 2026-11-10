@@ -1,4 +1,4 @@
-module mysqlmem/benchmarks/testcontainers
+module github.com/masahitojp/mysql-in-go/benchmarks/testcontainers
 
 go 1.26.0
 
@@ -9,7 +9,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.45.0
 	github.com/testcontainers/testcontainers-go/modules/mysql v0.45.0
 	github.com/testcontainers/testcontainers-go/modules/podman v0.45.0
-	mysqlmem v0.0.0
+	github.com/masahitojp/mysql-in-go v0.0.0
 )
 
 require (
@@ -64,4 +64,4 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 )
 
-replace mysqlmem => ../..
+replace github.com/masahitojp/mysql-in-go => ../..

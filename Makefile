@@ -8,7 +8,7 @@ export BISON_PKGDATADIR := $(CURDIR)/.work/sysroot/usr/share/bison
 export PATH := $(CURDIR)/.work/sysroot/usr/bin:$(PATH)
 JOBS ?= 10
 
-.PHONY: bootstrap configure mysql package build fmt vet test test-sql check-source source-archive test-api example test-select-one timing compare-testcontainers test-fixture test-fixture-tmpfs test-lifecycle test-fixture-discard compare-disposable
+.PHONY: bootstrap configure mysql package build fmt vet test test-sql check-source source-archive test-api example test-select-one timing compare-testcontainers test-fixture test-fixture-tmpfs test-lifecycle test-fixture-discard compare-disposable release-build release-source
 bootstrap:
 	./scripts/bootstrap.sh
 configure:
@@ -18,7 +18,7 @@ mysql:
 package:
 	python3 scripts/package-mysql.py
 build:
-	$(GO) build -buildvcs=false -o bin/mysqlmem ./cmd/mysqlmem
+	$(GO) -C server build -buildvcs=false -o ../bin/mysqlmem .
 	$(GO) build -buildvcs=false -o bin/selectone ./cmd/selectone
 	$(GO) build -buildvcs=false -o bin/sqlcheck ./cmd/sqlcheck
 	$(GO) build -buildvcs=false -o bin/example ./cmd/example
@@ -70,3 +70,12 @@ test-fixture-discard:
 compare-disposable:
 	$(GO) -C benchmarks/testcontainers build -buildvcs=false -o ../../bin/compare-testcontainers .
 	TESTCONTAINERS_PROVIDER=podman ./bin/compare-testcontainers -root . -runs 5 -disposable
+
+release-build:
+	./scripts/release-build.sh
+
+release-source:
+	python3 scripts/stage-release.py
+	podman run --rm -v "$(CURDIR)/.work/release-root:/src:rw" localhost/mysql-in-go-builder:ubuntu24 bash scripts/source-deps.sh
+	$(MAKE) source-archive
+	python3 scripts/corresponding-source.py

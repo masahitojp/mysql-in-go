@@ -21,4 +21,5 @@ MySQL, Bao and all generated/downloaded files. `make package` copies MySQL, GCC
 and glibc notice files to the generated package, alongside Bao's generated
 bootstrap notices. Other linked dependencies retain the notices in their source
 trees. The root MIT license is not a license for the combined executable.
-This repository does not publish a prebuilt server release.
+Prebuilt server releases include a separate corresponding-source archive and
+the linked runtime notices. See docs/distribution.md.

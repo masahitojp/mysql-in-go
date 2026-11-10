@@ -1,4 +1,4 @@
-module mysqlmem
+module github.com/masahitojp/mysql-in-go
 
 go 1.26.0
 

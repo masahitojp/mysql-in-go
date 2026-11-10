@@ -19,8 +19,9 @@ import (
 	"time"
 
 	driver "github.com/go-sql-driver/mysql"
-	"mysqlmem/internal/parentwatch"
-	"mysqlmem/internal/tempstore"
+	"github.com/masahitojp/mysql-in-go/internal/parentwatch"
+	"github.com/masahitojp/mysql-in-go/internal/serverbundle"
+	"github.com/masahitojp/mysql-in-go/internal/tempstore"
 )
 
 // Options locates the server and its runtime assets. Relative paths are
@@ -89,23 +90,17 @@ func StartContext(ctx context.Context, options ...Options) (*DB, error) {
 	if o.ShutdownTimeout == 0 {
 		o.ShutdownTimeout = 30 * time.Second
 	}
-	defaults := []struct {
-		value    *string
-		fallback string
-	}{{&o.Binary, "bin/mysqlmem"}, {&o.BaseDir, ".work/mysql-build"}, {&o.CharacterSetsDir, ".work/mysql/share/charsets"}}
-	for _, p := range defaults {
-		if *p.value == "" {
-			*p.value = p.fallback
-		}
-		abs, err := filepath.Abs(*p.value)
-		if err != nil {
-			return nil, err
-		}
-		*p.value = abs
-		if _, err := os.Stat(abs); err != nil {
-			return nil, fmt.Errorf("mysql: required path %s: %w", abs, err)
+	bundle, err := serverbundle.Locate(ctx, o.Binary, o.BaseDir, o.CharacterSetsDir)
+	if err != nil {
+		return nil, err
+	}
+	o.Binary, o.BaseDir, o.CharacterSetsDir = bundle.Binary, bundle.BaseDir, bundle.CharacterSetsDir
+	for _, p := range []string{o.Binary, o.BaseDir, o.CharacterSetsDir} {
+		if _, err := os.Stat(p); err != nil {
+			return nil, fmt.Errorf("mysql: required path %s: %w", p, err)
 		}
 	}
+
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -166,6 +161,11 @@ func StartContext(ctx context.Context, options ...Options) (*DB, error) {
 		return fail(errors.New("temporary directory makes Unix socket path too long"))
 	}
 	args := []string{"--no-defaults", "--basedir=" + o.BaseDir, "--datadir=" + data, "--lc-messages-dir=" + filepath.Join(o.BaseDir, "share"), "--character-sets-dir=" + o.CharacterSetsDir}
+	// In root-owned CI containers MySQL requires an explicit user choice.
+	// This keeps the caller's existing UID; it does not elevate privileges.
+	if os.Geteuid() == 0 {
+		args = append(args, "--user=root")
+	}
 	if o.Tmpfs {
 		sqlTemp := filepath.Join(work, "sql-tmp")
 		if err := os.Mkdir(sqlTemp, 0700); err != nil {

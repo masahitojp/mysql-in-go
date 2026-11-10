@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"mysqlmem/mysql"
-	"mysqlmem/mysqltest"
+	"github.com/masahitojp/mysql-in-go/mysql"
+	"github.com/masahitojp/mysql-in-go/mysqltest"
 )
 
 // compareDisposable separates amortized fixture preparation from per-test costs.

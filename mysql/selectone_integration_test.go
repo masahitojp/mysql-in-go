@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"mysqlmem/mysql"
+	"github.com/masahitojp/mysql-in-go/mysql"
 )
 
 // TestSelectOne demonstrates testing real MySQL through the public Go API.

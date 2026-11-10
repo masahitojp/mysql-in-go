@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"mysqlmem/mysql"
+	"github.com/masahitojp/mysql-in-go/mysql"
 )
 
 type sample struct {

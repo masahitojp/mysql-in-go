@@ -29,3 +29,5 @@ __pycache__/
 *.log
 /core
 /core.[0-9]*
+
+/server/native/

@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"unsafe"
 
-	"mysqlmem/internal/parentwatch"
-	"mysqlmem/native"
+	"github.com/masahitojp/mysql-in-go/internal/parentwatch"
+	"github.com/masahitojp/mysql-in-go/server/native"
 )
 
 func main() {
