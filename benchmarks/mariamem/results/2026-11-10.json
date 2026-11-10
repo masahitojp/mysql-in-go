@@ -1,0 +1,118 @@
+{
+  "module": "github.com/masahitojp/mariamem@v0.6.2",
+  "environment": "Same Ubuntu 26.10 x86_64 host/kernel as mysql-in-go measurements, rootless Podman Ubuntu 24.04 userland, no CPU or memory limit, /tmp tmpfs 1 GiB. Container startup, image pull and Go build excluded. Default TCP transport. Five fixtures per workload in one process. First sample includes process-local first use; later samples reuse process caches. Empty InnoDB seed table; SELECT 1 asserted and version recorded. MariaDB 12.3.3 embedded differs from MySQL 8.4.13; not an identical engine/OS comparison. No OS cache flush or load isolation.",
+  "one_test": [
+    {
+      "preparation_ms": 79.687775,
+      "children_ms": [
+        69.8964
+      ],
+      "cleanup_ms": 0.003126,
+      "total_ms": 149.588364,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 70.615412,
+      "children_ms": [
+        57.848376
+      ],
+      "cleanup_ms": 0.001994,
+      "total_ms": 128.466313,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 71.888683,
+      "children_ms": [
+        65.704806
+      ],
+      "cleanup_ms": 0.002304,
+      "total_ms": 137.596545,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 63.06695,
+      "children_ms": [
+        65.32857
+      ],
+      "cleanup_ms": 0.002034,
+      "total_ms": 128.397904,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 50.770621,
+      "children_ms": [
+        41.118998
+      ],
+      "cleanup_ms": 0.001913,
+      "total_ms": 91.892063,
+      "version": "12.3.3-MariaDB-embedded"
+    }
+  ],
+  "five_tests": [
+    {
+      "preparation_ms": 82.869352,
+      "children_ms": [
+        72.659291,
+        68.319468,
+        57.897179,
+        64.804545,
+        61.663284
+      ],
+      "cleanup_ms": 0.002935,
+      "total_ms": 408.218829,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 62.284902,
+      "children_ms": [
+        63.081969,
+        46.751129,
+        50.401697,
+        62.558816,
+        47.84806
+      ],
+      "cleanup_ms": 0.002495,
+      "total_ms": 332.931251,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 66.519898,
+      "children_ms": [
+        47.706654,
+        52.443152,
+        48.457685,
+        55.187077,
+        51.097334
+      ],
+      "cleanup_ms": 0.002564,
+      "total_ms": 321.416438,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 71.598378,
+      "children_ms": [
+        68.147546,
+        42.918779,
+        44.527952,
+        42.572188,
+        46.660659
+      ],
+      "cleanup_ms": 0.002555,
+      "total_ms": 316.430421,
+      "version": "12.3.3-MariaDB-embedded"
+    },
+    {
+      "preparation_ms": 56.874106,
+      "children_ms": [
+        60.358803,
+        42.022856,
+        40.963175,
+        46.122087,
+        49.681013
+      ],
+      "cleanup_ms": 0.003396,
+      "total_ms": 296.027221,
+      "version": "12.3.3-MariaDB-embedded"
+    }
+  ]
+}
